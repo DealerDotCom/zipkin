@@ -2,10 +2,7 @@ package zipkin.collector.sqs;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.sqs.AmazonSQSClient;
-import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.ReceiveMessageResult;
+import com.amazonaws.services.sqs.model.*;
 import zipkin.Codec;
 import zipkin.collector.Collector;
 import zipkin.collector.CollectorComponent;
@@ -55,8 +52,9 @@ public class SqsCollector implements CollectorComponent, Runnable {
 
     @Override
     public void run() {
+        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(sqsQueueUrl).withWaitTimeSeconds(1);
         while (run.get()) {
-            ReceiveMessageResult result = client.receiveMessage(sqsQueueUrl);
+            ReceiveMessageResult result = client.receiveMessage(receiveMessageRequest);
             List<DeleteMessageBatchRequestEntry> deletes = new ArrayList<>();
             for (Message message : result.getMessages()) {
                 System.out.println(message.getBody());

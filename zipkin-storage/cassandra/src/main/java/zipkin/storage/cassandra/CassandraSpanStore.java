@@ -167,6 +167,7 @@ public final class CassandraSpanStore implements GuavaSpanStore {
             .and(QueryBuilder.eq("bucket", QueryBuilder.bindMarker("time_bucket")))
             .and(QueryBuilder.lte("duration", QueryBuilder.bindMarker("max_duration")))
             .and(QueryBuilder.gte("duration", QueryBuilder.bindMarker("min_duration")))
+            .limit(QueryBuilder.bindMarker("limit_"))
             .orderBy(QueryBuilder.desc("duration")));
 
     if (protocolVersion.compareTo(ProtocolVersion.V4) < 0) {
@@ -639,7 +640,7 @@ public final class CassandraSpanStore implements GuavaSpanStore {
       final long startTs, final long endTs) {
     String serviceName = request.serviceName;
     String spanName = spanName(request.spanName);
-    long minDuration = request.minDuration;
+    long minDuration = request.minDuration != null ? request.minDuration : 0;
     long maxDuration = request.maxDuration != null ? request.maxDuration : Long.MAX_VALUE;
     int limit = request.limit;
     BoundStatement bound =
@@ -654,16 +655,16 @@ public final class CassandraSpanStore implements GuavaSpanStore {
     // because their timestamps are out of range, we may need to fetch again.
     // TODO figure out better strategy
     bound.setFetchSize(limit);
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(debugSelectTraceIdsByDuration(
+//    if (LOG.isDebugEnabled()) {
+      LOG.error(debugSelectTraceIdsByDuration(
           bucket,
-          request.serviceName,
-          request.spanName,
-          request.minDuration,
-          request.maxDuration,
-          request.limit
+          serviceName,
+          spanName,
+          minDuration,
+          maxDuration,
+          limit
       ));
-    }
+//    }
     return transform(session.executeAsync(bound), new Function<ResultSet, List<DurationRow>>() {
       @Override public List<DurationRow> apply(ResultSet rs) {
         ImmutableList.Builder<DurationRow> result = ImmutableList.builder();
